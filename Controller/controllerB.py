@@ -26,7 +26,7 @@ for i in range(len(buttonList)):
 topic = "TopicTest"
 topicHello = "setup/hello"
 player = 0
-controller = "Controller_A"
+controller = "Controller_B"
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
