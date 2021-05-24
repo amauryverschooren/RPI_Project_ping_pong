@@ -22,7 +22,7 @@ for i in range(len(buttonList)):
     GPIO.setup(buttonList[i],GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 #strings
-topics = ["setup/hallo", "game/controller", "game/racket", "game/ball", "game/start"]
+topics = ["setup/hello", "game/controller", "game/racket", "game/ball", "game/start"]
 player = 0
 controller = "Controller_B"
 
@@ -43,13 +43,13 @@ def on_subscribe(client, userdata, msg, granted_qos):
     print("Subscribed: " + str(msg) + " QoS: " + str(granted_qos))
 
 def upButton(channel):
-    client.publish(topic, "VAR=UP; NAAM="+ controller)
+    client.publish("game/controller", "VAR=UP; NAAM="+ controller)
 
 def downButton(channel):
-    client.publish(topic, "VAR=DN; NAAM="+ controller)
+    client.publish("game/controller", "VAR=DN; NAAM="+ controller)
 
 def middleButton(channel):
-    client.publish(topic, "VAR=MD; NAAM="+ controller)
+    client.publish("game/controller", "VAR=MD; NAAM="+ controller)
 
 def helloMessage():
     client.publish("setup/hello", "ID="+ controller)
@@ -67,7 +67,6 @@ def on_message(client, userdata, msg):
         if "ID="+controller in x:
             print("same as controller")
             for item in x:
-
                 if "CONTROLLERNUMBER" in item:
                     item = slice(19,20)
                     player = item
