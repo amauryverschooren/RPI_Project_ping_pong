@@ -14,7 +14,7 @@ ledList = [4,17,27]
 #buttons
 buttonList = [18,23,24]
 
-#setup 
+#setup
 for i in range(len(ledList)):
     GPIO.setup(ledList[i],GPIO.OUT)
     GPIO.output(ledList[i], False)
@@ -24,13 +24,18 @@ for i in range(len(buttonList)):
 
 #strings
 topic = "TopicTest"
-topicHello = "setup/hello"
 player = 0
 controller = "Controller_B"
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
 
+    #Subscribing in de on_connect() zorgt ervoor dat bij een connectie verlies
+    #en het reconnecten de subscribtie vernieuwd zal worden.
+    client.subscribe("setup/hello")
+    client.subscribe("game/controller")
+    client.subscribe("game/racket")
+    client.subscribe("game/ball")
 
 def on_publish(client, userdata, msg):
     print("Message published")
@@ -48,7 +53,7 @@ def middleButton(channel):
     client.publish(topic, "VAR=MD; NAAM="+ controller)
 
 def helloMessage():
-    client.publish(topicHello, "ID="+ controller)
+    client.publish("setup/hello", "ID="+ controller)
 
 def on_message(client, userdata, msg):
     global player
@@ -58,15 +63,26 @@ def on_message(client, userdata, msg):
 
     x = payload.split("; ")
     print(x)
-    if "ID="+controller in x:
-        print("same as controller")
-        for item in x:
 
-            if "CONTROLLERNUMBER" in item:
-                item = slice(19,20)
-                player = item
-    print(player)
-    print("done")
+    if msg.topic == "setup/hello":
+        if "ID="+controller in x:
+            print("same as controller")
+            for item in x:
+
+                if "CONTROLLERNUMBER" in item:
+                    item = slice(19,20)
+                    player = item
+        print(player)
+        print("done")
+
+    elif msg.topic == "game/controller":
+        print("test topic game/controller")
+
+    elif msg.topic == "game/racket":
+        print("test topic game/racket")
+
+    elif msg.topic == "game/ball":
+        print("test topic game/ball")
 
 client = mqtt.Client(client_id="clientId-GRysPI2021", clean_session=True, userdata=None, protocol=mqtt.MQTTv31, transport="tcp")   
 client.on_connect = on_connect
@@ -74,8 +90,6 @@ client.on_publish = on_publish
 client.on_subscribe = on_subscribe
 client.on_message = on_message
 client.connect("213.119.34.109", 1888)
-
-client.subscribe(topicHello)
 
 helloMessage()
 
