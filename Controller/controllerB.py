@@ -35,7 +35,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("game/controller")
     client.subscribe("game/racket")
     client.subscribe("game/ball")
-
+    client.subscribe("game/start")
     helloMessage()
 
 def on_publish(client, userdata, msg):
@@ -84,6 +84,9 @@ def on_message(client, userdata, msg):
 
     elif msg.topic == "game/ball":
         print("test topic game/ball")
+
+    elif msg.topic == "game/start":
+        print("test topic game/start")
 
 client = mqtt.Client(client_id="clientId-GRysPI2021", clean_session=True, userdata=None, protocol=mqtt.MQTTv31, transport="tcp")   
 client.on_connect = on_connect
