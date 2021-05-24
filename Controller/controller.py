@@ -20,54 +20,47 @@ ledList = [4, 27, 17]
 #buttons
 buttonList = [18, 23, 24]
 
-
-
 #setup
 for i in range(len(ledList)):
     GPIO.setup(ledList[i], GPIO.OUT)
     GPIO.output(ledList[i], False)
 
 for i in range(len(buttonList)):
-    GPIO.setup(buttonList[i], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(buttonList[i], GPIO.IN)
 
 #strings
-topic = "game/controller"
-topicHello = "setup/hello"
-
+topics = ["setup/hello", "game/controller", "game/racket", "game/ball", "game/start"]
 player = 0
 controller = "Controller_A"
-
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
 
+    for topic in topics:
+        client.subscribe(topic)
+
+    helloMessage()
 
 def on_publish(client, userdata, msg):
     print("Message published")
 
-
 def on_subscribe(client, userdata, msg, granted_qos):
     print("Subscribed: " + str(msg) + " QoS: " + str(granted_qos))
 
-
 def upButton(channel):
-    client.publish(topic, "VAR=UP; CONTROLLER=" + player)
-
+    client.publish(topics[1], "VAR=UP; CONTROLLER=" + player)
 
 def downButton(channel):
-    client.publish(topic, "VAR=DN; CONTROLLER=" + player)
-
+    client.publish(topics[1], "VAR=DN; CONTROLLER=" + player)
 
 def middleButton(channel):
-    client.publish(topic, "VAR=SP; CONTROLLER=" + player)
-
+    client.publish(topics[1], "VAR=SP; CONTROLLER=" + player)
 
 def helloMessage():
-    client.publish(topicHello, "ID=" + controller)
+    client.publish(topics[0], "ID=" + controller)
 
 def startGame():
-    client.publish(gameStartTopic, )
-
+    client.publish(topics[4], "GAME_START" )
 
 def on_message(client, userdata, msg):
     global player
@@ -77,39 +70,44 @@ def on_message(client, userdata, msg):
 
     x = payload.split("; ")
     print(x)
-    if "ID=" + controller in x:
+
+    if msg.topic == topics[0]:
+        if "ID=" + controller in x:
         # print("same as controller")
-        for item in x:
+            for item in x:
 
-            if "PLAYERNUMBER" in item:
-                player = item[slice(13, 14)]
-                print(player)
-                turnPlayerLedOn(int(player))
+                if "PLAYERNUMBER" in item:
+                    player = item[slice(13, 14)]
+                    print(player)
+                    turnPlayerLedOn(int(player))
 
-    print("done")
+    elif msg.topic == "game/controller":
+        print("test topic game/controller")
 
+    elif msg.topic == "game/racket":
+        print("test topic game/racket")
+
+    elif msg.topic == "game/ball":
+        print("test topic game/ball")
+
+    elif msg.topic == "game/start":
+        print("test topic game/start")
+        startUI()
+    # if "ID=" + controller in x:
+    #     # print("same as controller")
+    #     for item in x:
+
+    #         if "PLAYERNUMBER" in item:
+    #             player = item[slice(13, 14)]
+    #             print(player)
+    #             turnPlayerLedOn(int(player))
+    # print("done")
 
 def turnPlayerLedOn(player):
     print(str(ledList[player - 1]) + " turns on")
-
     GPIO.output(ledList[player - 1], True)
 
 
-client = mqtt.Client(client_id="clientId-GrysPI2021",
-                     clean_session=True,
-                     userdata=None,
-                     protocol=mqtt.MQTTv31,
-                     transport="tcp")
-
-client.on_connect = on_connect
-client.on_publish = on_publish
-client.on_subscribe = on_subscribe
-client.on_message = on_message
-client.connect("213.119.34.109", 1888)
-
-client.subscribe(topicHello)
-
-helloMessage()
 
 #check if terminal or screen
 if os.environ.get('DISPLAY', '') == '':
@@ -133,15 +131,17 @@ class splash(tk.Frame):
         self.button.pack()
     
     def destroySplash(self):
-        self.parent.destroy()
-        # startGame()
+        # self.parent.destroy()
+        startGame()
         # Game(tk.Tk())
 
 class Game(tk.Frame):
     def __init__(self,root):
         tk.Frame.__init__(self,root) 
         self.root = root
-        self.createGame()       
+        self.createGame()
+        self.enableButtonEvents()
+    
 
 
     def createGame(self):
@@ -167,22 +167,60 @@ class Game(tk.Frame):
         self.Lower_left.place(relx = 0.0, rely = 0.0,anchor ='nw')
         self.Upper_right.place(relx = 1.0,rely = 0.0,anchor ='ne')
 
+
+    def enableButtonEvents(self):
+        print("buttons enabled")
+        GPIO.add_event_detect(18, GPIO.FALLING, callback=upButton, bouncetime=250)
+        GPIO.add_event_detect(23, GPIO.FALLING, callback=downButton, bouncetime=250)
+        GPIO.add_event_detect(24, GPIO.FALLING, callback=downButton, bouncetime=250)
+
+# class drawing:
+    # @abstractmethod
+    # def update(self, x,y):
+    #     pass
+
+    # @abstractmethod
+    # def create(self):
+    #     pass
+
 class Bar():
     def __init__(self, canvas, x, y):
-        self.y = y
-        self.x = x
         self.canvas = canvas
-        self.canvas.create_rectangle(self.x , self.y, self.x + 15, self.y +85, width=2, fill='white')
+        self.update(x,y)
 
-    def update(self, canvas, x, y):
-        time.sleep(0.1)
+    def update(self, x, y):
+        self.x = x
+        self.y = y
+        self.create()
+
+    def create(self):
+        self.canvas.create_rectangle(self.x , self.y, self.x + 15, self.y +85, width=2, fill='white')
         
 class Ball():
     def __init__(self, canvas, x, y):
-        self.y = y
-        self.x = x
         self.canvas = canvas
+        self.update(x,y)
+    
+    def update(self, x, y):
+        self.x = x
+        self.y = y
+        self.create()
+
+    def create(self):
         self.canvas.create_oval(self.x , self.y, self.x + 20, self.y +20, width=2, fill='white')
+
+
+client = mqtt.Client(client_id="clientId-GrysPI2021",
+                     clean_session=True,
+                     userdata=None,
+                     protocol=mqtt.MQTTv31,
+                     transport="tcp")
+
+client.on_connect = on_connect
+client.on_publish = on_publish
+client.on_subscribe = on_subscribe
+client.on_message = on_message
+client.connect("213.119.34.109", 1888)
 
 
 # createMainGame()
