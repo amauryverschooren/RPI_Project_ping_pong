@@ -5,7 +5,6 @@ import RPi.GPIO as GPIO
 import time
 
 GPIO.setmode(GPIO.BCM)
-
 GPIO.setup(18,GPIO.OUT)
 
 #leds
@@ -36,6 +35,8 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("game/controller")
     client.subscribe("game/racket")
     client.subscribe("game/ball")
+
+    helloMessage()
 
 def on_publish(client, userdata, msg):
     print("Message published")
@@ -89,9 +90,7 @@ client.on_connect = on_connect
 client.on_publish = on_publish
 client.on_subscribe = on_subscribe
 client.on_message = on_message
-client.connect("213.119.34.109", 1888)
-
-helloMessage()
+client.connect("213.119.34.109", 1888, 60)
 
 try:
 	client.loop_forever()
