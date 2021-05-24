@@ -22,7 +22,7 @@ for i in range(len(buttonList)):
     GPIO.setup(buttonList[i],GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 #strings
-topic = "TopicTest"
+topics = ["setup/hallo", "game/controller", "game/racket", "game/ball", "game/start"]
 player = 0
 controller = "Controller_B"
 
@@ -31,11 +31,9 @@ def on_connect(client, userdata, flags, rc):
 
     #Subscribing in de on_connect() zorgt ervoor dat bij een connectie verlies
     #en het reconnecten de subscribtie vernieuwd zal worden.
-    client.subscribe("setup/hello")
-    client.subscribe("game/controller")
-    client.subscribe("game/racket")
-    client.subscribe("game/ball")
-    client.subscribe("game/start")
+    for topic in topics:
+        client.subscribe(topic)
+
     helloMessage()
 
 def on_publish(client, userdata, msg):
