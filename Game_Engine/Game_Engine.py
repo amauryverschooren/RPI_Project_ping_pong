@@ -7,8 +7,8 @@ GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 
 #GLOBALS
-hello_topic = "setup/hello"
-ball_topic, racket_topic, control_topic = "game/ball", "game/racket", "game/controller"
+ = 
+hello_topic, ball_topic, racket_topic, control_topic, led_topic = "setup/hello", "game/ball", "game/racket", "game/controller", "game/led"
 controller_flag = 0
 ball_flag = 0
 canvas_width = 600
@@ -40,8 +40,14 @@ class Ball:
 			self.x_heading = 1
 		if self.positionY <= 0:
 			self.y_heading = 1
-		print(self.positionX)
-		print(self.positionY)
+		print(self.positionX + " - " + self.positionY)
+	def check_collision_pad(self):
+		if self.positionX + 20 >= canvas_width - (20 + racket_dimensions[0]):
+			if (self.positionY + 20) < (Racket2.yPosition + racket_dimensions[1]) && self.positionY > Racket2.yPosition:
+				self.x_heading = -1
+		if self.positionX <= (20 + racket_dimensions[0]):
+			if (self.positionY + 20) < (Racket2.yPosition + racket_dimensions[1]) && self.positionY > Racket2.yPosition:
+				self.x_heading = 1
 		self.send_position()
 class Racket:
 	def __init__(self, xPos,yPos,number):
