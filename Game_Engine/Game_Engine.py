@@ -7,7 +7,6 @@ GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 
 #GLOBALS
- = 
 hello_topic, ball_topic, racket_topic, control_topic, led_topic = "setup/hello", "game/ball", "game/racket", "game/controller", "game/led"
 controller_flag = 0
 ball_flag = 0
@@ -40,20 +39,28 @@ class Ball:
 			self.x_heading = 1
 		if self.positionY <= 0:
 			self.y_heading = 1
-		print(self.positionX + " - " + self.positionY)
+		print(str(self.positionX) + " - " + str(self.positionY))
+		self.check_collision_pad()
 	def check_collision_pad(self):
 		if self.positionX + 20 >= canvas_width - (20 + racket_dimensions[0]):
-			if (self.positionY + 20) < (Racket2.yPosition + racket_dimensions[1]) && self.positionY > Racket2.yPosition:
+			print("trigger collision")
+			if (self.positionY + 20) < (Racket2.yPosition + racket_dimensions[1]) and self.positionY > Racket2.yPosition:
 				self.x_heading = -1
+				Racket2.score += 5
+				print("dit is de score van speler 2" + str(Racket2.score))
 		if self.positionX <= (20 + racket_dimensions[0]):
-			if (self.positionY + 20) < (Racket2.yPosition + racket_dimensions[1]) && self.positionY > Racket2.yPosition:
+			print("trigger collision")
+			if (self.positionY + 20) < (Racket1.yPosition + racket_dimensions[1]) and self.positionY > Racket1.yPosition:
 				self.x_heading = 1
+				Racket1.score += 5
+				print("dit is de score van speler 1" + str(Racket1.score))
 		self.send_position()
 class Racket:
 	def __init__(self, xPos,yPos,number):
 		self.playerNumber = number
 		self.xPosition = xPos
 		self.yPosition = yPos
+		self.score = 0
 	def update_position(self, input_number):
 		self.yPosition += input_number
 		print("position racket: " + str(self.playerNumber) + " updated!")
@@ -64,9 +71,10 @@ class Racket:
 		
 
 #aanmaken bal en pads
-Ball = Ball(((canvas_width/2)-(ball_dimensions[0]/2)), ((canvas_height/2)-(ball_dimensions[1]/2)))
 Racket1 = Racket(canvas_width - canvas_width +1, canvas_height/2-racket_dimensions[1]/2,1)
 Racket2 = Racket(canvas_width - 1, canvas_height/2-racket_dimensions[1]/2,2)
+Ball = Ball(((canvas_width/2)-(ball_dimensions[0]/2)), ((canvas_height/2)-(ball_dimensions[1]/2)))
+
 
 
 
