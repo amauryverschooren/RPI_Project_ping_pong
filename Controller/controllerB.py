@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 
 from tkinter.constants import BOTTOM
@@ -35,7 +36,7 @@ if os.environ.get('DISPLAY', '') == '':
 #strings
 topics = ["setup/hello", "game/controller", "game/racket", "game/ball", "game/start"]
 player = 0
-controller = "Controller_B"
+controller = "Controller_A"
 
 def upButton(channel):
     client.publish(topics[1], "PLAYERNUMBER=" + str(player)+ "; PAD_UP")
@@ -61,7 +62,10 @@ class Bar():
 
     def move(self):
         self.canvas.coords(self.id, self.x, self.y, self.x+ 10, self.y+100)
-              
+
+    def bar_to_be_threaded():
+        threading.Thread(target=self.move).start()
+        
 class Ball():
     def __init__(self, canvas, x, y):
         self.canvas = canvas
@@ -75,6 +79,9 @@ class Ball():
 
     def move(self):
         self.canvas.coords(self.id, self.x, self.y, self.x + 20, self.y+ 20)
+
+    def ball_to_be_threaded():
+        threading.Thread(target=self.move).start()
         
 def enableButtonEvents():
     print("buttons enabled")
@@ -97,86 +104,19 @@ ball = Ball(canvas, 290, 190 )
 
 enableButtonEvents()
 
-def MQTT():
+def on_connect(client, userdata, flags, rc):
+    print("Connected with result code " + str(rc))
 
-    def on_connect(client, userdata, flags, rc):
-        print("Connected with result code " + str(rc))
+    for topic in topics:
+        client.subscribe(topic)
 
-        for topic in topics:
-            client.subscribe(topic)
+    helloMessage()
 
-        helloMessage()
+def on_publish(client, userdata, msg):
+    print("")
 
-    def on_publish(client, userdata, msg):
-        print("")
-
-    def on_subscribe(client, userdata, msg, granted_qos):
-        print("Subscribed: " + str(msg) + " QoS: " + str(granted_qos))
-
-    def on_message(client, userdata, msg):
-        global player, bar1, bar2, ball
-        msg.payload = msg.payload.decode("utf-8")
-        payload = str(msg.payload)
-        print("Message: " + payload + "\n")
-
-        x = payload.split("; ")
-        print(x)
-
-        if msg.topic == topics[0]:
-
-            if "ID=" + controller in x:
-            # print("same as controller")
-                for item in x:
-
-                    if "PLAYERNUMBER" in item:
-                        player = item[slice(13, 14)]
-                        print(player)
-                        turnPlayerLedOn(int(player))
-
-
-        elif msg.topic == "game/controller":
-            print("test topic game/controller")
-
-        elif msg.topic == "game/racket":
-
-            print("test topic game/racket")
-            racket = x[0][slice(7,8)]
-            print(racket)
-            y = x[1][9:]
-    
-            print(y)
-
-            if int(racket) == 1: 
-                print("racket1")
-                bar1.update(float(y))
-            elif int(racket) == 2:
-                print("racket2")
-                bar2.update(float(y))
-
-            # ["bar"+ racket].update(y)
-        
-
-        elif msg.topic == "game/ball":
-            print("test topic game/ball")
-
-            ball.update(float(x[0]), float(x[1]))
-
-
-        elif msg.topic == "game/start":
-            print("test topic game/start")
-            startUI()
-
-    client = mqtt.Client(client_id="clientId-GrysPI2021",
-                         clean_session=True,
-                         userdata=None,
-                         protocol=mqtt.MQTTv31,
-                         transport="tcp")
-    client.on_connect = on_connect
-    client.on_publish = on_publish
-    client.on_subscribe = on_subscribe
-    client.on_message = on_message
-    client.connect("213.119.34.109", 1888)
-    client.loop_forever()
+def on_subscribe(client, userdata, msg, granted_qos):
+    print("Subscribed: " + str(msg) + " QoS: " + str(granted_qos))
 
 def helloMessage():
     client.publish(topics[0], "ID=" + controller)
@@ -184,6 +124,58 @@ def helloMessage():
 def startGame():
     client.publish(topics[4], "GAME_START" )
 
+def on_message(client, userdata, msg):
+    global player, bar1, bar2, ball
+    msg.payload = msg.payload.decode("utf-8")
+    payload = str(msg.payload)
+    print("Message: " + payload + "\n")
+
+    x = payload.split("; ")
+    print(x)
+
+    if msg.topic == topics[0]:
+
+        if "ID=" + controller in x:
+        # print("same as controller")
+            for item in x:
+
+                if "PLAYERNUMBER" in item:
+                    player = item[slice(13, 14)]
+                    print(player)
+                    turnPlayerLedOn(int(player))
+
+
+    elif msg.topic == "game/controller":
+        print("test topic game/controller")
+
+    elif msg.topic == "game/racket":
+
+        print("test topic game/racket")
+        racket = x[0][slice(7,8)]
+        print(racket)
+        y = x[1][9:]
+    
+        print(y)
+
+        if int(racket) == 1: 
+            print("racket1")
+            bar1.update(float(y))
+        elif int(racket) == 2:
+            print("racket2")
+            bar2.update(float(y))
+
+        # ["bar"+ racket].update(y)
+        
+
+    elif msg.topic == "game/ball":
+        print("test topic game/ball")
+
+        ball.update(float(x[0]), float(x[1]))
+
+
+    elif msg.topic == "game/start":
+        print("test topic game/start")
+        startUI()
 
 def turnPlayerLedOn(player):
     print(str(ledList[player - 1]) + " turns on")
@@ -213,6 +205,11 @@ class splash(tk.Frame):
         # self.parent.destroy()
         startGame()
         # Game(tk.Tk())
+
+    def spash_to_be_threaded():
+        threading.Thread(target=self.makeSplash).start()
+        threading.Thread(target=self.destroySplash).start()
+
 
 def main():
 
@@ -269,6 +266,11 @@ class Game(tk.Frame):
         GPIO.add_event_detect(23, GPIO.FALLING, callback=downButton, bouncetime=250)
         GPIO.add_event_detect(24, GPIO.FALLING, callback=middleButton, bouncetime=250)
 
+    def game_to_be_threaded(self):
+        #threading.Thread(target=__init__, self, root)
+        threading.Thread(target=self.createGame).start()
+        threading.Thread(target=self.enableButtonEvents).start()
+
 # class drawing:
     # @abstractmethod
     # def update(self, x,y):
@@ -281,23 +283,35 @@ class Game(tk.Frame):
 
 
 
-#client = mqtt.Client(client_id="clientId-GrysPI2021",
-                     #clean_session=True,
-                     #userdata=None,
-                     #protocol=mqtt.MQTTv31,
-                     #transport="tcp")
+client = mqtt.Client(client_id="clientId-b0p5xkpzF5",
+                     clean_session=True,
+                     userdata=None,
+                     protocol=mqtt.MQTTv31,
+                     transport="tcp")
 
-#client.on_connect = on_connect
-#client.on_publish = on_publish
-#client.on_subscribe = on_subscribe
-#client.on_message = on_message
-#client.connect("213.119.34.109", 1888)
+client.on_connect = on_connect
+client.on_publish = on_publish
+client.on_subscribe = on_subscribe
+client.on_message = on_message
+client.connect("213.119.34.109", 1888)
 
-job1 = Thread(target=MQTT)
-#job2 = Thread(target=GUI)
+job1 = Thread(target=helloMessage)
+job2 = Thread(target=startGame)
+#job3 = Thread(target=player.createGame).start()
+job4 = Thread(target=enableButtonEvents)
+#job5 = Thread(target=channel.upButton)
+#job6 = Thread(target=channel.downButton)
+#job7 = Thread(target=channel.middleButton)
+#job8 = Thread(target=main)
 
 job1.start()
-#job2.start()
+job2.start()
+#job3.start()
+job4.start()
+#job5.start()
+#job6.start()
+#job7.start()
+#job8.start()
 
 # createMainGame()
 # root = tk.Tk()
@@ -310,7 +324,7 @@ job1.start()
 
 
 try:
-    #client.loop_start()
+    client.loop_start()
     main()
 
     # root.mainloop()
