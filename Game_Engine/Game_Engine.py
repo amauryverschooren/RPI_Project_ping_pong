@@ -162,6 +162,12 @@ def on_message(client, userdata, msg):
 				Racket1.update_velocity()
 			elif splittedString[0] == "PLAYERNUMBER=2":
 				Racket2.update_velocity()
+	elif msg.topic == "game/state":
+		if msg.payload == "CONTROLLER=GAME_STARTED":
+			client.publish(state_topic, "GAME_STARTED")
+			time.sleep(2)
+			ball_flag = 1
+			
 def publish_hello(message):
 	client.publish(hello_topic, message)
 	print("Controller hello message send")
@@ -174,7 +180,7 @@ def end_game():
 client.on_connect = on_connect
 client.on_message = on_message
 client.connect("213.119.34.109", 1888, 60)
-client.subscribe([(hello_topic,0),(racket_topic,0),(control_topic,0)])
+client.subscribe([(hello_topic,0),(racket_topic,0),(control_topic,0), (state_topic,0)])
 ball_topic, racket_topic, control_topic
 client.loop_start()
 while ball_flag == 0:
