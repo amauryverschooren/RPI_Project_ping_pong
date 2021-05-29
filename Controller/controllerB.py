@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 
 from tkinter.constants import BOTTOM
@@ -36,7 +35,7 @@ if os.environ.get('DISPLAY', '') == '':
 #strings
 topics = ["setup/hello", "game/controller", "game/racket", "game/ball", "game/start"]
 player = 0
-controller = "Controller_A"
+controller = "Controller_B"
 
 def upButton(channel):
     client.publish(topics[1], "PLAYERNUMBER=" + str(player)+ "; PAD_UP")
@@ -49,6 +48,7 @@ def middleButton(channel):
 
 class Bar():
     def __init__(self, canvas, x, y):
+        #threading.Thread.__init__(self)
         self.canvas = canvas
         self.x = x
         
@@ -57,6 +57,7 @@ class Bar():
         self.update(y)
 
     def update(self, y):
+       #threading.Thread.update(self)
         self.y = y
         # self.move()
 
@@ -68,11 +69,13 @@ class Bar():
         
 class Ball():
     def __init__(self, canvas, x, y):
+        #threading.Thread.__init__(self)
         self.canvas = canvas
         self.id = self.canvas.create_oval(0 , 0, 20, 20, fill='white')
         self.update(x,y)
     
     def update(self, x, y):
+        #threading.Thread.update(self)
         self.x = x
         self.y = y
         # self.move()
@@ -181,12 +184,9 @@ def turnPlayerLedOn(player):
     print(str(ledList[player - 1]) + " turns on")
     GPIO.output(ledList[player - 1], True)
 
-
-
-
-
 class splash(tk.Frame):
     def __init__(self, parent):
+        threading.Thread.__init__(self)
         tk.Frame.__init__(self,parent)
         self.parent = parent
         self.makeSplash()
@@ -200,7 +200,7 @@ class splash(tk.Frame):
         self.label.pack()
         self.button = tk.Button(self.parent, text="start game", command=self.destroySplash)
         self.button.pack()
-    
+
     def destroySplash(self):
         # self.parent.destroy()
         startGame()
@@ -230,6 +230,7 @@ def main():
 
 class Game(tk.Frame):
     def __init__(self,root):
+        threading.Thread.__init__(self)
         tk.Frame.__init__(self,root) 
         self.root = root
         self.createGame()
@@ -298,16 +299,16 @@ client.connect("213.119.34.109", 1888)
 job1 = Thread(target=helloMessage)
 job2 = Thread(target=startGame)
 #job3 = Thread(target=player.createGame).start()
-job4 = Thread(target=enableButtonEvents)
-#job5 = Thread(target=channel.upButton)
-#job6 = Thread(target=channel.downButton)
-#job7 = Thread(target=channel.middleButton)
+#job4 = Thread(target=enableButtonEvents)
+#job5 = Thread(target=upButton,args=(channel))
+#job6 = Thread(target=downButton,args=(channel))
+#job7 = Thread(target=middleButton,args=(channel))
 #job8 = Thread(target=main)
 
 job1.start()
 job2.start()
 #job3.start()
-job4.start()
+#job4.start()
 #job5.start()
 #job6.start()
 #job7.start()
