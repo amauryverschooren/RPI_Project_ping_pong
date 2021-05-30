@@ -7,11 +7,9 @@ import RPi.GPIO as GPIO
 import tkinter as tk
 import sys
 import os
-
 import time
 
 GPIO.setmode(GPIO.BCM)
-
 
 #leds
 ledList = [4, 27, 17]
@@ -53,12 +51,12 @@ class splash(tk.Frame):
     
     def destroySplash(self):
         self.parent.destroy()
+        self.parent.quit()
         # startUI()
         # Game(tk.Tk())
+
     def buttonClick(self):
         startGame()
-
-
 
 #strings
 topics = ["setup/hello", "game/controller", "game/racket", "game/ball", "game/state", "game/score", "game/led"]
@@ -120,12 +118,12 @@ def enableButtonEvents():
     GPIO.add_event_detect(24, GPIO.FALLING, callback=middleButton, bouncetime=150)
 
 def startUI():
-    global bar1,bar2, ball , canvas, score_Player_1, score_Player_2, root
-    root= tk.Tk()
-    root.title("Ping Pong")
-    canvas = tk.Canvas(root, width=600, height=400, bg='#000000')
+    global bar1,bar2, ball , canvas, score_Player_1, score_Player_2, rootgame
+    rootgame= tk.Tk()
+    rootgame.title("Ping Pong")
+    canvas = tk.Canvas(rootgame, width=600, height=400, bg='#000000')
     canvas.pack()
-    root.update()
+    rootgame.update()
 
     middle = canvas.create_rectangle(298.5 , 0, 298.5+ 3, 600, width=2, fill='#222222')
 
@@ -139,7 +137,7 @@ def startUI():
 
     enableButtonEvents()
     time.sleep(1)
-    main()
+    # main()
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
@@ -183,7 +181,6 @@ def on_message(client, userdata, msg):
 
     # racket
     elif msg.topic == topics[2]:
-
         print("test topic game/racket")
         racket = x[0][slice(7,8)]
         y = x[1][9:]
@@ -218,61 +215,30 @@ def on_message(client, userdata, msg):
         player_score[int(p)-1] = score
         print(player_score)
 
+    # led
+    elif msg.topic == topics[6]:
+        print("test topic game/score")
+        if x[0] == "LED_ON":
+            GPIO.output(ledList[0], True )
+        elif x[0] == "LED_OFF":
+            GPIO.output(ledList[0], False )
+
 def turnPlayerLedOn(player):
     print(str(ledList[player - 1]) + " turns on")
     GPIO.output(ledList[player - 1], True)
 
-
 def main():
-    global score_Player_1, score_Player_2, root
+    global score_Player_1, score_Player_2, rootgame
     while 1: 
         canvas.delete(score_Player_1)
         canvas.delete(score_Player_2)
         score_Player_1 = canvas.create_text(200,24, anchor="center", fill="#ffffff", text="Player 1: "+ str(player_score[0]) )
         score_Player_2 = canvas.create_text(400,24, anchor="center", fill="#ffffff", text="Player 2: "+ str(player_score[1]))
-        root.update()
+        rootgame.update()
         ball.move()
         bar1.move()
         bar2.move()
         time.sleep(0.2)
-
-class Game(tk.Frame):
-    def __init__(self,root):
-        tk.Frame.__init__(self,root) 
-        self.root = root
-        self.createGame()
-        self.enableButtonEvents()
-    
-    def createGame(self):
-
-        self.root.title("Ping Pong")
-
-        self.frame = tk.Frame(self.root)
-        self.frame.pack()
-
-        self.canvas = tk.Canvas(self.frame, width=600, height=400, bg='#000000')
-        self.canvas.pack()
-
-        self.bar1 = Bar(self.canvas, 20, 175)
-        self.bar2 = Bar(self.canvas, 565, 175)
-
-        self.middle = self.canvas.create_rectangle(298.5 , 0, 298.5+ 3, 600, width=2, fill='#222222')
-
-        self.ball = Ball(self.canvas, 290, 190 )
-
-        self.Lower_left = tk.Label(root,text ='Player 1')
-        self.Upper_right = tk.Label(root,text ='Player 2')
-        
-        self.Lower_left.place(relx = 0.0, rely = 0.0,anchor ='nw')
-        self.Upper_right.place(relx = 1.0,rely = 0.0,anchor ='ne')
-
-
-
-    def enableButtonEvents(self):
-        print("buttons enabled")
-        GPIO.add_event_detect(18, GPIO.FALLING, callback=upButton, bouncetime=250)
-        GPIO.add_event_detect(23, GPIO.FALLING, callback=downButton, bouncetime=250)
-        GPIO.add_event_detect(24, GPIO.FALLING, callback=middleButton, bouncetime=250)
 
 client = mqtt.Client(client_id="clientId-GrysPI2021",
                      clean_session=True,
@@ -293,12 +259,12 @@ client.connect("213.119.34.109", 1888)
 
 try:
     client.loop_start()
-    # main()
-    root.mainloop()
-
     startUI()
+    root.mainloop()
+    print("try")
+    main()
 
 except KeyboardInterrupt:
+    root.stop()
     GPIO.cleanup()
-
 GPIO.cleanup()
