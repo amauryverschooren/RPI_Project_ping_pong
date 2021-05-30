@@ -3,6 +3,7 @@ import paho.mqtt.client as mqtt
 import urllib.request
 import RPi.GPIO as GPIO
 import time
+import threading
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 
@@ -45,33 +46,42 @@ class Ball:
 		self.check_collision_pad()
 	def check_collision_pad(self):
 		if self.positionX + 20 >= canvas_width:
+			Racket1.score += Racket1.temp_score
+			Racket2.temp_score = 0
+			client.publish(score_topic, "PLAYER_"+str(Racket2.playerNumber)+"; SCORE=" + str(Racket2.score))
+			client.publish(score_topic, "PLAYER_"+str(Racket1.playerNumber)+"; SCORE=" + str(Racket1.score))
 			self.new_round()
 		elif self.positionX <= 0:
+			Racket2.score += Racket2.temp_score
+			Racket1.temp_score = 0
+			client.publish(score_topic, "PLAYER_"+str(Racket2.playerNumber)+"; SCORE=" + str(Racket2.score))
+			client.publish(score_topic, "PLAYER_"+str(Racket1.playerNumber)+"; SCORE=" + str(Racket1.score))
 			self.new_round()
 		elif self.positionX + 20 >= (canvas_width - (20 + racket_dimensions[0])):
 			if (self.positionY + 20) < (Racket2.yPosition + racket_dimensions[1]) and self.positionY > Racket2.yPosition:
 				if (self.positionX +20) <= (canvas_width - 20):
 					print("trigger collision pad")
 					self.x_heading = -1
-					Racket2.score += 5
+					Racket2.temp_score += 5
 					print("dit is de score van speler 2: " + str(Racket2.score))
-					client.publish(score_topic, "PLAYER_"+str(Racket2.playerNumber)+"; SCORE=" + str(Racket2.score))
+					client.publish(score_topic, "PLAYER_"+str(Racket2.playerNumber)+"; SCORE=" + str(Racket2.temp_score))
 		elif self.positionX <= (20 + racket_dimensions[0]):
 			if (self.positionY + 20) < (Racket1.yPosition + racket_dimensions[1]) and self.positionY > Racket1.yPosition:
 				if self.positionX >= 20:
 					print("trigger collision pad")
 					self.x_heading = 1
-					Racket1.score += 5
+					Racket1.temp_score += 5
 					print("dit is de score van speler 1: " + str(Racket1.score))
-					client.publish(score_topic, "PLAYER_"+str(Racket1.playerNumber)+"; SCORE=" + str(Racket1.score))
+					client.publish(score_topic, "PLAYER_"+str(Racket1.playerNumber)+"; SCORE=" + str(Racket1.temp_score))
 		self.send_position()
 	def new_round(self):
 		print("nieuwe ronde")
+
 		global rounds
 		global end_game_flag
-		rounds += 1 if rounds < 10 else 0
+		rounds += 1 if rounds < 11 else 0
 		print(rounds)
-		if rounds == 10:
+		if rounds == 2:
 			end_game_flag = True
 		self.positionX = ((canvas_width/2)-(ball_dimensions[0]/2))
 		self.positionY = ((canvas_height/2)-(ball_dimensions[1]/2))
@@ -82,6 +92,7 @@ class Racket:
 		self.xPosition = xPos
 		self.yPosition = yPos
 		self.score = 0
+		self.temp_score = 0
 		self.racketVelocity = 1
 		self.high_speed_triggered = False
 	def update_position(self, input_number):
@@ -164,9 +175,13 @@ def on_message(client, userdata, msg):
 				Racket2.update_velocity()
 	elif msg.topic == "game/state":
 		if msg.payload == "CONTROLLER=GAME_STARTED":
+			print("game started from controller")
 			client.publish(state_topic, "GAME_STARTED")
 			time.sleep(2)
+			trigger_leds()
 			ball_flag = 1
+			# threading.Timer(2, game_loop()).start()
+			
 			
 def publish_hello(message):
 	client.publish(hello_topic, message)
@@ -174,17 +189,29 @@ def publish_hello(message):
 
 def end_game():
 	print("Game has ended")
-	client.publish(state_topic, "GAME_END")
-
+	if Racket1.score > Racket2.score:
+		client.publish(state_topic, "GAME_END; PLAYER_1")
+	elif Racket2.score > Racket1.score:
+		client.publish(state_topic, "GAME_END; PLAYER_2")
+	else:
+		client.publish(state_topic, "GAME_END; GELIJK")
+def trigger_leds():
+	for	i in range(3):
+		client.publish(led_topic, "LED_ON")
+		print("led on")
+		time.sleep(1)
+		client.publish(led_topic, "LED_OFF")
+		print("led off")
+		time.sleep(1)
 
 client.on_connect = on_connect
 client.on_message = on_message
 client.connect("213.119.34.109", 1888, 60)
 client.subscribe([(hello_topic,0),(racket_topic,0),(control_topic,0), (state_topic,0)])
-ball_topic, racket_topic, control_topic
 client.loop_start()
 while ball_flag == 0:
-	print("Game ready")
+	time.sleep(0)
+	#print("Game ready")
 while ball_flag == 1:
 	time.sleep(0.1)
 	if end_game_flag == False:
