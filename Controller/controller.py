@@ -11,6 +11,7 @@ import time
 
 GPIO.setmode(GPIO.BCM)
 
+
 #leds
 ledList = [4, 27, 17]
 
@@ -57,6 +58,8 @@ class splash(tk.Frame):
 
     def buttonClick(self):
         startGame()
+
+
 
 #strings
 topics = ["setup/hello", "game/controller", "game/racket", "game/ball", "game/state", "game/score", "game/led"]
@@ -203,7 +206,18 @@ def on_message(client, userdata, msg):
             splash.destroySplash()
         elif(x[0] == "GAME_END"):
             print("end")
-    
+
+            # if x[1] == "GELIJK":
+            #     showWON("Nobody won!")
+            #     # canvas.create_text(300, 200, anchor="center", fill="#ffffff", text="NOBODY WON!")
+            # else:
+            #     temp = x[1].replace("_", " ")
+            #     # canvas.create_text(300, 200, anchor="center", fill="#ffffff", text= temp + " has won the game!")
+            #     showWON(temp + " has won the game!")
+            # time.sleep(5)
+            # rootgame.destroy()
+            # rootgame.quit()
+
     # score
     elif msg.topic == topics[5]:
         print("test topic game/score")
@@ -222,6 +236,10 @@ def on_message(client, userdata, msg):
             GPIO.output(ledList[0], True )
         elif x[0] == "LED_OFF":
             GPIO.output(ledList[0], False )
+
+def showWON(string):
+    global canvas
+    canvas.create_text(300, 200, anchor="center", fill="#ffffff", text=string)
 
 def turnPlayerLedOn(player):
     print(str(ledList[player - 1]) + " turns on")
