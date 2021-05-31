@@ -217,18 +217,7 @@ def on_message(client, userdata, msg):
         elif(x[0] == "NEW_ROUND"):
             print("led")
             ledTiming()
-
-            # if x[1] == "GELIJK":
-            #     showWON("Nobody won!")
-            #     # canvas.create_text(300, 200, anchor="center", fill="#ffffff", text="NOBODY WON!")
-            # else:
-            #     temp = x[1].replace("_", " ")
-            #     # canvas.create_text(300, 200, anchor="center", fill="#ffffff", text= temp + " has won the game!")
-            #     showWON(temp + " has won the game!")
-            # time.sleep(5)
-            # rootgame.destroy()
-            # rootgame.quit()
-
+            
     # score
     elif msg.topic == topics[5]:
         print("test topic game/score")
