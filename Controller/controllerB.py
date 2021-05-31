@@ -268,7 +268,7 @@ def main():
         bar2.move()
         time.sleep(0.2)
 
-client = mqtt.Client(client_id="clientId-GrysPI2021",
+client = mqtt.Client(client_id="clientId-nSlrniNHmL",
                      clean_session=True,
                      userdata=None,
                      protocol=mqtt.MQTTv31,
