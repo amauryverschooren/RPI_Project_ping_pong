@@ -11,7 +11,6 @@ import time
 
 GPIO.setmode(GPIO.BCM)
 
-
 #leds
 ledList = [4, 27, 17]
 
@@ -21,6 +20,9 @@ buttonList = [18, 23, 24]
 # players
 player_score = [0,0]
 
+#flag
+flag = False
+winnerPlayer = ""
 #setup
 for i in range(len(ledList)):
     GPIO.setup(ledList[i], GPIO.OUT)
@@ -58,8 +60,6 @@ class splash(tk.Frame):
 
     def buttonClick(self):
         startGame()
-
-
 
 #strings
 topics = ["setup/hello", "game/controller", "game/racket", "game/ball", "game/state", "game/score", "game/led"]
@@ -121,7 +121,7 @@ def enableButtonEvents():
     GPIO.add_event_detect(24, GPIO.FALLING, callback=middleButton, bouncetime=150)
 
 def startUI():
-    global bar1,bar2, ball , canvas, score_Player_1, score_Player_2, rootgame
+    global bar1,bar2, ball , canvas, score_Player_1, score_Player_2, rootgame, winner
     rootgame= tk.Tk()
     rootgame.title("Ping Pong")
     canvas = tk.Canvas(rootgame, width=600, height=400, bg='#000000')
@@ -137,7 +137,7 @@ def startUI():
 
     score_Player_1 = canvas.create_text(200,24, anchor="center", fill="#ffffff", text="Player 1: "+ str(player_score[0]) )
     score_Player_2 = canvas.create_text(400,24, anchor="center", fill="#ffffff", text="Player 2: "+ str(player_score[1]))
-
+    winner = canvas.create_text(300, 200, anchor="center", fill="#ffffff", text="" )
     enableButtonEvents()
     time.sleep(1)
     # main()
@@ -157,7 +157,7 @@ def on_subscribe(client, userdata, msg, granted_qos):
     print("Subscribed: " + str(msg) + " QoS: " + str(granted_qos))
 
 def on_message(client, userdata, msg):
-    global player, bar1, bar2, ball, Upper_left, Upper_right
+    global player, bar1, bar2, ball, Upper_left, Upper_right, flag, winnerPlayer
     msg.payload = msg.payload.decode("utf-8")
     payload = str(msg.payload)
     # print("Message: " + payload + "\n")
@@ -201,11 +201,22 @@ def on_message(client, userdata, msg):
     # start
     elif msg.topic == topics[4]:
         print("test topic game/state")
-        if(x[0] == "GAME_STARTED"):
-            # startUI()
+        if(x[0]) == "CONTROLLER=GAME_STARTED":
+            print("led")
             splash.destroySplash()
+            ledTiming()
+
+        elif(x[0] == "GAME_STARTED"):
+            # startUI()
+            time.sleep(0)
         elif(x[0] == "GAME_END"):
             print("end")
+            winnerPlayer = x[1].replace("_", " ")
+            flag = True
+        
+        elif(x[0] == "NEW_ROUND"):
+            print("led")
+            ledTiming()
 
             # if x[1] == "GELIJK":
             #     showWON("Nobody won!")
@@ -237,6 +248,15 @@ def on_message(client, userdata, msg):
         elif x[0] == "LED_OFF":
             GPIO.output(ledList[0], False )
 
+def ledTiming():
+    for i in range(3):
+        GPIO.output(ledList[2], True)
+        print("led on")
+        time.sleep(1)
+        GPIO.output(ledList[2], False)
+        print("led off")
+        time.sleep(1)
+
 def showWON(string):
     global canvas
     canvas.create_text(300, 200, anchor="center", fill="#ffffff", text=string)
@@ -246,8 +266,13 @@ def turnPlayerLedOn(player):
     GPIO.output(ledList[player - 1], True)
 
 def main():
-    global score_Player_1, score_Player_2, rootgame
+    global score_Player_1, score_Player_2, rootgame, flag, winnerPlayer, winner
     while 1: 
+        if flag == True:
+            canvas.delete(winner)
+            winner = canvas.create_text(300, 150, anchor="center", fill="#ffffff", text=str(winnerPlayer) + " won!" )
+            
+
         canvas.delete(score_Player_1)
         canvas.delete(score_Player_2)
         score_Player_1 = canvas.create_text(200,24, anchor="center", fill="#ffffff", text="Player 1: "+ str(player_score[0]) )
@@ -269,11 +294,6 @@ client.on_publish = on_publish
 client.on_subscribe = on_subscribe
 client.on_message = on_message
 client.connect("213.119.34.109", 1888)
-
-# createMainGame()
-# root = tk.Tk()
-# splash(root)
-# Game(root)
 
 try:
     client.loop_start()
