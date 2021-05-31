@@ -146,11 +146,6 @@ def startUI():
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
 
-    for topic in topics:
-        client.subscribe(topic)
-
-    helloMessage()
-
 def on_publish(client, userdata, msg):
     print("")
 
@@ -284,6 +279,11 @@ client.on_publish = on_publish
 client.on_subscribe = on_subscribe
 client.on_message = on_message
 client.connect("213.119.34.109", 1888)
+
+for topic in topics:
+    client.subscribe(topic)
+
+helloMessage()
 
 try:
     client.loop_start()
